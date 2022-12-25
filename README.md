@@ -10,8 +10,8 @@ This is a GUI tool to search through a specified directory for some specified ph
 * The index is reused after the app restart.
 
 # How to Start
-* install requirements:
-  * `libglfw3-dev libglfw3 g++ pkg-config`
+* install requirements: \
+  `libglfw3-dev libglfw3 g++ pkg-config`
 * ``` 
   cd src
   make all
