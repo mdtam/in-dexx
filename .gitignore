@@ -1,1 +1,11 @@
+# IDE files
 .vscode
+
+# window information
+imgui.ini
+
+# build output files
+*.o
+
+# executable
+in_dexx
