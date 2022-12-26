@@ -5,9 +5,12 @@
 
 #include <stdio.h>
 
+#include <iostream>
+
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
+#include "portable-file-dialogs.h"
 #define GL_SILENCE_DEPRECATION
 #if defined(IMGUI_IMPL_OPENGL_ES2)
 #include <GLES2/gl2.h>
@@ -25,6 +28,8 @@ static void glfw_error_callback(int error, const char* description) {
     fprintf(stderr, "Glfw Error %d: %s\n", error, description);
 }
 
+char Target_Dir[300] = "";
+
 static void ShowFullscreenUI(bool* p_open) {
     static bool use_work_area = true;
     static ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings;
@@ -34,8 +39,16 @@ static void ShowFullscreenUI(bool* p_open) {
     ImGui::SetNextWindowSize(use_work_area ? viewport->WorkSize : viewport->Size);
 
     if (ImGui::Begin("In-Dexx Search", p_open, flags)) {
-        if (p_open && ImGui::Button("Close this window"))
+        ImGui::InputTextWithHint("Target Directory", "your/path/goes/here", Target_Dir, IM_ARRAYSIZE(Target_Dir));
+        ImGui::SameLine();
+        if (p_open && ImGui::Button("Select...")) {
+            auto dir = pfd::select_folder("Select any directory", pfd::path::home()).result();
+        }
+        if (p_open && ImGui::Button("Close"))
             *p_open = false;
+
+        bool show_demo_window = true;
+        ImGui::ShowDemoWindow(&show_demo_window);
     }
     ImGui::End();
 }
@@ -103,7 +116,7 @@ int main(int, char**) {
     // io.Fonts->AddFontDefault();
     // io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\segoeui.ttf", 18.0f);
     // io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
-    // io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
+    io.Fonts->AddFontFromFileTTF("../misc/fonts/Roboto-Medium.ttf", 16.0f);
     // io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
     // ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
     // IM_ASSERT(font != NULL);
@@ -111,7 +124,6 @@ int main(int, char**) {
     // --- In-Dexx code starts here!
 
     // Our state
-    bool show_demo_window = false;
     bool show_ui_window = true;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
@@ -128,10 +140,6 @@ int main(int, char**) {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-
-        // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-        if (show_demo_window)
-            ImGui::ShowDemoWindow(&show_demo_window);
 
         // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
         if (show_ui_window) {
