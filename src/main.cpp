@@ -29,6 +29,7 @@ static void glfw_error_callback(int error, const char* description) {
 }
 
 char Target_Dir[300] = "";
+char Search_Phrase[500] = "";
 
 static void ShowFullscreenUI(bool* p_open) {
     static bool use_work_area = true;
@@ -43,7 +44,20 @@ static void ShowFullscreenUI(bool* p_open) {
         ImGui::SameLine();
         if (p_open && ImGui::Button("Select...")) {
             auto dir = pfd::select_folder("Select any directory", pfd::path::home()).result();
+            for (int i = 0; i < 300 && dir.size() > 0; i++) {
+                if (i < (int)dir.size()) {
+                    Target_Dir[i] = dir[i];
+                } else {
+                    Target_Dir[i] = '\0';
+                }
+            }
         }
+
+        ImGui::InputTextWithHint("Search Phrase", "to be or not to be", Search_Phrase, IM_ARRAYSIZE(Search_Phrase));
+        ImGui::SameLine();
+        if (p_open && ImGui::Button("Search")) {
+        }
+
         if (p_open && ImGui::Button("Close"))
             *p_open = false;
 
