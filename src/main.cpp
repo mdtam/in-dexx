@@ -3,9 +3,18 @@
 // If you are new to Dear ImGui, read documentation from the docs/ folder + read the top of imgui.cpp.
 // Read online: https://github.com/ocornut/imgui/tree/master/docs
 
+#include <dirent.h>
 #include <stdio.h>
+#include <sys/types.h>
 
+#include <cctype>
+#include <fstream>
 #include <iostream>
+#include <sstream>
+#include <string>
+#include <vector>
+
+using namespace std;
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
@@ -23,6 +32,49 @@
 #if defined(_MSC_VER) && (_MSC_VER >= 1900) && !defined(IMGUI_DISABLE_WIN32_FUNCTIONS)
 #pragma comment(lib, "legacy_stdio_definitions")
 #endif
+
+// Directory recursive
+std::vector<std::string> readDirectory(std::string directory) {
+    // travel thru a directory gathering all the file and directory naems
+    vector<string> fileList;
+    DIR* dir;
+    struct dirent* ent;
+
+    // open a directory
+    if ((dir = opendir(directory.c_str())) != NULL) {
+        while ((ent = readdir(dir)) != NULL)  // loop until the directory is traveled thru
+        {
+            // push directory or filename to the list
+            fileList.push_back(ent->d_name);
+        }
+        // close up
+        closedir(dir);
+    }
+    // return the filelust
+    return fileList;
+}
+
+void readDirectoryRecursive(string directory, vector<string>* fullList) {
+    // get the "root" directory's directories
+    vector<string> fileList = readDirectory(directory);
+
+    // loop thru the list
+    for (vector<string>::iterator i = fileList.begin(); i != fileList.end(); ++i) {
+        // test for . and .. directories (this and back)
+        if (strcmp((*i).c_str(), ".") &&
+            strcmp((*i).c_str(), "..")) {
+            // i use stringstream here, not string = foo; string.append(bar);
+            stringstream fullname;
+            fullname << directory << "/" << (*i);
+
+            fullList->push_back(fullname.str());
+
+            readDirectoryRecursive(fullname.str(), fullList);
+        }
+    }
+}
+
+vector<string> targetFiles;
 
 static void glfw_error_callback(int error, const char* description) {
     fprintf(stderr, "Glfw Error %d: %s\n", error, description);
@@ -42,7 +94,7 @@ static void ShowFullscreenUI(bool* p_open) {
     if (ImGui::Begin("In-Dexx Search", p_open, flags)) {
         ImGui::InputTextWithHint("Target Directory", "your/path/goes/here", Target_Dir, IM_ARRAYSIZE(Target_Dir));
         ImGui::SameLine();
-        if (p_open && ImGui::Button("Select...")) {
+        if (ImGui::Button("Select...")) {
             auto dir = pfd::select_folder("Select any directory", pfd::path::home()).result();
             for (int i = 0; i < 300 && dir.size() > 0; i++) {
                 if (i < (int)dir.size()) {
@@ -55,10 +107,44 @@ static void ShowFullscreenUI(bool* p_open) {
 
         ImGui::InputTextWithHint("Search Phrase", "to be or not to be", Search_Phrase, IM_ARRAYSIZE(Search_Phrase));
         ImGui::SameLine();
-        if (p_open && ImGui::Button("Search")) {
+        if (ImGui::Button("Search")) {
+            if (Target_Dir[0] == '\0') {
+                ImGui::OpenPopup("empty_target_dir");
+            } else if (Search_Phrase[0] == '\0') {
+                ImGui::OpenPopup("empty_search");
+            } else {
+                // search
+                targetFiles.clear();
+                readDirectoryRecursive(Target_Dir, &targetFiles);
+            }
+        }
+        if (ImGui::BeginPopup("empty_target_dir")) {
+            ImGui::Text("Target Directory is Empty");
+            ImGui::Separator();
+            ImGui::EndPopup();
+        }
+        if (ImGui::BeginPopup("empty_search")) {
+            ImGui::Text("Search Phrase is Empty");
+            ImGui::EndPopup();
         }
 
-        if (p_open && ImGui::Button("Close"))
+        static ImGuiTableFlags flags = ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg;
+
+        if (ImGui::BeginTable("table1", 2, flags)) {
+            ImGui::TableSetupColumn("File Name", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableSetupColumn("Matches", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableHeadersRow();
+            for (int row = 0; row < (int)targetFiles.size(); row++) {
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                ImGui::TextUnformatted(targetFiles[row].c_str());
+                ImGui::TableSetColumnIndex(1);
+                ImGui::TextUnformatted(to_string(row).c_str());
+            }
+            ImGui::EndTable();
+        }
+
+        if (ImGui::Button("Close"))
             *p_open = false;
 
         bool show_demo_window = true;
