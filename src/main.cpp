@@ -16,6 +16,7 @@
 
 using namespace std;
 
+#include "boyer-moore.h"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
@@ -32,6 +33,8 @@ using namespace std;
 #if defined(_MSC_VER) && (_MSC_VER >= 1900) && !defined(IMGUI_DISABLE_WIN32_FUNCTIONS)
 #pragma comment(lib, "legacy_stdio_definitions")
 #endif
+
+boyerMoore bm;
 
 // Directory recursive
 std::vector<std::string> readDirectory(std::string directory) {
@@ -68,20 +71,21 @@ void readDirectoryRecursive(string directory, vector<string>* fullList) {
             fullname << directory << "/" << (*i);
 
             fullList->push_back(fullname.str());
-
-            readDirectoryRecursive(fullname.str(), fullList);
+            bm.fileIn(fullname.str());
+            // readDirectoryRecursive(fullname.str(), fullList);
         }
     }
 }
 
 vector<string> targetFiles;
+vector<LLI> fileMatches;
 
 static void glfw_error_callback(int error, const char* description) {
     fprintf(stderr, "Glfw Error %d: %s\n", error, description);
 }
 
-char Target_Dir[300] = "";
-char Search_Phrase[500] = "";
+char Target_Dir[3000] = "";
+char Search_Phrase[50000] = "";
 
 static void ShowFullscreenUI(bool* p_open) {
     static bool use_work_area = true;
@@ -96,7 +100,7 @@ static void ShowFullscreenUI(bool* p_open) {
         ImGui::SameLine();
         if (ImGui::Button("Select...")) {
             auto dir = pfd::select_folder("Select any directory", pfd::path::home()).result();
-            for (int i = 0; i < 300 && dir.size() > 0; i++) {
+            for (int i = 0; i < IM_ARRAYSIZE(Target_Dir) && dir.size() > 0; i++) {
                 if (i < (int)dir.size()) {
                     Target_Dir[i] = dir[i];
                 } else {
@@ -114,8 +118,13 @@ static void ShowFullscreenUI(bool* p_open) {
                 ImGui::OpenPopup("empty_search");
             } else {
                 // search
+                bm.clean();
                 targetFiles.clear();
+                fileMatches.clear();
+                bm.patIn(Search_Phrase);
                 readDirectoryRecursive(Target_Dir, &targetFiles);
+
+                bm.search(&fileMatches);
             }
         }
         if (ImGui::BeginPopup("empty_target_dir")) {
@@ -135,11 +144,13 @@ static void ShowFullscreenUI(bool* p_open) {
             ImGui::TableSetupColumn("Matches", ImGuiTableColumnFlags_WidthFixed);
             ImGui::TableHeadersRow();
             for (int row = 0; row < (int)targetFiles.size(); row++) {
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted(targetFiles[row].c_str());
-                ImGui::TableSetColumnIndex(1);
-                ImGui::TextUnformatted(to_string(row).c_str());
+                if (fileMatches[row]) {
+                    ImGui::TableNextRow();
+                    ImGui::TableSetColumnIndex(0);
+                    ImGui::TextUnformatted(targetFiles[row].c_str());
+                    ImGui::TableSetColumnIndex(1);
+                    ImGui::TextUnformatted(to_string(fileMatches[row]).c_str());
+                }
             }
             ImGui::EndTable();
         }
