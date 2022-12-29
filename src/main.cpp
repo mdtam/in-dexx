@@ -158,7 +158,7 @@ static void ShowFullscreenUI(bool* p_open) {
         if (ImGui::Button("Close"))
             *p_open = false;
 
-        bool show_demo_window = true;
+        bool show_demo_window = false;
         ImGui::ShowDemoWindow(&show_demo_window);
     }
     ImGui::End();
