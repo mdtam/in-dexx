@@ -13,6 +13,7 @@ This is a GUI tool to search through a specified directory for some specified ph
   * Don't read the files on every search. Only read all files when the directory changes
   * add option to search recursively in chosen directory. (feature already available but not enabled)
   * store history of searches. 
+  * ADD VALIDATION before searching or reading directories. Validating Paths and Search phrases to provide more security.
 
 # How to Start
 * install requirements: \
